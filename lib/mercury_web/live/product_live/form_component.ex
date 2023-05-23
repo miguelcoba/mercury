@@ -22,6 +22,22 @@ defmodule MercuryWeb.ProductLive.FormComponent do
         <.input field={@form[:name]} type="text" label="Name" />
         <.label for="#images">Images</.label>
         <div id="images">
+          <div class="flex flex-row flex-wrap justify-start items-start text-center text-slate-500 gap-2 mb-8">
+            <div :for={image <- @images_to_show} class="border shadow-md pb-1">
+              <figure class="w-32 h-32 overflow-clip">
+                <img src={image} />
+              </figure>
+              <a
+                phx-click="remove"
+                phx-target={@myself}
+                phx-value-image={image}
+                class="hover:text-slate-800"
+              >
+                <.icon name="hero-trash" />
+              </a>
+            </div>
+          </div>
+
           <div
             class="p-4 border-2 border-dashed border-slate-300 rounded-md text-center text-slate-600"
             phx-drop-target={@uploads.images.ref}
@@ -76,13 +92,24 @@ defmodule MercuryWeb.ProductLive.FormComponent do
   @max_file_size 5_000_000
 
   @impl true
+  def mount(socket) do
+    socket =
+      socket
+      |> assign(:removed_images, [])
+
+    {:ok, socket}
+  end
+
+  @impl true
   def update(%{product: product} = assigns, socket) do
     changeset = Products.change_product(product)
+    images_to_show = product.images -- socket.assigns.removed_images
 
     {:ok,
      socket
      |> assign(assigns)
      |> assign_form(changeset)
+     |> assign(:images_to_show, images_to_show)
      |> allow_upload(:images,
        accept: ~w(.png .jpg .jpeg),
        max_entries: @max_entries,
@@ -101,6 +128,8 @@ defmodule MercuryWeb.ProductLive.FormComponent do
   end
 
   def handle_event("save", %{"product" => product_params}, socket) do
+    images_to_show = socket.assigns.images_to_show
+
     images =
       consume_uploaded_entries(socket, :images, fn meta, entry ->
         filename = "#{entry.uuid}#{Path.extname(entry.client_name)}"
@@ -111,13 +140,27 @@ defmodule MercuryWeb.ProductLive.FormComponent do
         {:ok, ~p"/uploads/#{filename}"}
       end)
 
-    product_params = Map.put(product_params, "images", images)
+    product_params = Map.put(product_params, "images", images_to_show ++ images)
 
     save_product(socket, socket.assigns.action, product_params)
   end
 
   def handle_event("cancel", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :images, ref)}
+  end
+
+  @impl true
+  def handle_event("remove", %{"image" => image}, socket) do
+    product = socket.assigns.product
+    removed_images = [image | socket.assigns.removed_images]
+    images_to_show = product.images -- removed_images
+
+    socket =
+      socket
+      |> assign(:removed_images, removed_images)
+      |> assign(:images_to_show, images_to_show)
+
+    {:noreply, socket}
   end
 
   defp save_product(socket, :edit, product_params) do
