@@ -21,6 +21,9 @@ defmodule MercuryWeb.ProductLive.FormComponent do
       >
         <.input field={@form[:name]} type="text" label="Name" />
         <.label for="#images">Images</.label>
+
+        <.error :for={{msg, _} <- @form[:images].errors}><%= msg %></.error>
+
         <div id="images">
           <div class="flex flex-row flex-wrap justify-start items-start text-center text-slate-500 gap-2 mb-8">
             <div :for={image <- @images_to_show} class="border shadow-md pb-1">
@@ -119,12 +122,13 @@ defmodule MercuryWeb.ProductLive.FormComponent do
 
   @impl true
   def handle_event("validate", %{"product" => product_params}, socket) do
-    changeset =
-      socket.assigns.product
-      |> Products.change_product(product_params)
-      |> Map.put(:action, :validate)
+    images_to_show = socket.assigns.images_to_show
 
-    {:noreply, assign_form(socket, changeset)}
+    socket =
+      socket
+      |> validate_images(product_params, images_to_show)
+
+    {:noreply, socket}
   end
 
   def handle_event("save", %{"product" => product_params}, socket) do
@@ -146,7 +150,14 @@ defmodule MercuryWeb.ProductLive.FormComponent do
   end
 
   def handle_event("cancel", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :images, ref)}
+    images_to_show = socket.assigns.images_to_show
+
+    socket =
+      socket
+      |> cancel_upload(:images, ref)
+      |> validate_images(%{}, images_to_show)
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -159,6 +170,7 @@ defmodule MercuryWeb.ProductLive.FormComponent do
       socket
       |> assign(:removed_images, removed_images)
       |> assign(:images_to_show, images_to_show)
+      |> validate_images(%{}, images_to_show)
 
     {:noreply, socket}
   end
@@ -191,5 +203,23 @@ defmodule MercuryWeb.ProductLive.FormComponent do
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, :form, to_form(changeset))
+  end
+
+  defp validate_images(socket, product_params, images_to_show) do
+    images =
+      socket.assigns.uploads.images.entries
+      |> Enum.map(fn entry ->
+        filename = "#{entry.uuid}#{Path.extname(entry.client_name)}"
+        ~p"/uploads/#{filename}"
+      end)
+
+    product_params = Map.put(product_params, "images", images_to_show ++ images)
+
+    changeset =
+      socket.assigns.product
+      |> Products.change_product(product_params)
+      |> Map.put(:action, :validate)
+
+    assign_form(socket, changeset)
   end
 end

@@ -9,10 +9,13 @@ defmodule Mercury.Products.Product do
     timestamps()
   end
 
+  @max_files 3
+
   @doc false
   def changeset(product, attrs) do
     product
     |> cast(attrs, [:name, :images])
     |> validate_required([:name, :images])
+    |> validate_length(:images, max: @max_files, message: "Max number of images is #{@max_files}")
   end
 end
