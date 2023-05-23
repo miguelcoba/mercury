@@ -32,7 +32,6 @@ defmodule MercuryWeb.ProductLive.FormComponent do
                 phx-target={@myself}
                 phx-value-image={image}
                 class="hover:text-slate-800"
-                data-confirm="Are you sure? The pending uploads will be removed and you need to select them again."
               >
                 <.icon name="hero-trash" />
               </a>
@@ -161,12 +160,7 @@ defmodule MercuryWeb.ProductLive.FormComponent do
       socket
       |> assign(:removed_images, removed_images)
       |> assign(:images_to_show, images_to_show)
-      |> maybe_cancel_uploads()
-      |> allow_upload(:images,
-        accept: ~w(.png .jpg .jpeg),
-        max_entries: max_entries,
-        max_file_size: @max_file_size
-      )
+      |> maybe_update_upload_config(max_entries)
 
     {:noreply, socket}
   end
@@ -201,8 +195,12 @@ defmodule MercuryWeb.ProductLive.FormComponent do
     assign(socket, :form, to_form(changeset))
   end
 
-  defp maybe_cancel_uploads(socket) do
-    {socket, _} = Phoenix.LiveView.Upload.maybe_cancel_uploads(socket)
-    socket
+  defp maybe_update_upload_config(socket, max_entries) do
+    images_config = Map.get(socket.assigns.uploads, :images)
+
+    new_uploads =
+      Map.put(socket.assigns.uploads, :images, %{images_config | max_entries: max_entries})
+
+    assign(socket, :uploads, new_uploads)
   end
 end
