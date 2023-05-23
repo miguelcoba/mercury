@@ -1,4 +1,4 @@
-defmodule MercuryWeb.ProductLive.Show do
+defmodule MercuryWeb.ProductLive.Edit do
   use MercuryWeb, :live_view
 
   alias Mercury.Products
@@ -9,10 +9,10 @@ defmodule MercuryWeb.ProductLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
+  def handle_params(%{"id" => id}, _url, socket) do
     {:noreply,
      socket
-     |> assign(:page_title, "Show course")
+     |> assign(:page_title, "Edit Course")
      |> assign(:product, Products.get_product!(id))}
   end
 end

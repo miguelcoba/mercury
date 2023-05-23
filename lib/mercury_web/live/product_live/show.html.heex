@@ -1,8 +1,7 @@
 <.header>
   Product <%= @product.id %>
-  <:subtitle>This is a product record from your database.</:subtitle>
   <:actions>
-    <.link patch={~p"/products/#{@product}/show/edit"} phx-click={JS.push_focus()}>
+    <.link navigate={~p"/products/#{@product}/edit"} phx-click={JS.push_focus()}>
       <.button>Edit product</.button>
     </.link>
   </:actions>
@@ -10,18 +9,16 @@
 
 <.list>
   <:item title="Name"><%= @product.name %></:item>
-  <:item title="Images"><%= @product.images %></:item>
 </.list>
-
+<div class="mt-4">
+  <.label>Images</.label>
+  <div class="grid justify-center md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7 my-10">
+    <figure
+      :for={image <- @product.images}
+      class="rounded-lg border shadow-md max-w-xs md:max-w-none"
+    >
+      <img src={image} />
+    </figure>
+  </div>
+</div>
 <.back navigate={~p"/products"}>Back to products</.back>
-
-<.modal :if={@live_action == :edit} id="product-modal" show on_cancel={JS.patch(~p"/products/#{@product}")}>
-  <.live_component
-    module={MercuryWeb.ProductLive.FormComponent}
-    id={@product.id}
-    title={@page_title}
-    action={@live_action}
-    product={@product}
-    patch={~p"/products/#{@product}"}
-  />
-</.modal>

@@ -18,6 +18,11 @@ defmodule MercuryWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/products", ProductLive.Index
+    live "/products/new", ProductLive.New, :new
+    live "/products/:id", ProductLive.Show
+    live "/products/:id/edit", ProductLive.Edit, :edit
   end
 
   # Other scopes may use custom stacks.

@@ -7,6 +7,8 @@ defmodule Mercury.Application do
 
   @impl true
   def start(_type, _args) do
+    MercuryWeb.uploads_dir() |> File.mkdir_p!()
+
     children = [
       # Start the Telemetry supervisor
       MercuryWeb.Telemetry,
